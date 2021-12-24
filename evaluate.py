@@ -62,7 +62,7 @@ def extract_concepts_from_sentences(sentences, model, tokenizer, max_length=None
   tokenized_sents = [nltk.word_tokenize(x) for x in sentences] # [batch_size, scr_length]
   concepts = []
   for sent, pred in zip(tokenized_sents, preds.cpu().detach().numpy()):
-    c = [sent[idx - 1] for idx, i in enumerate(pred) if i and idx <= ]
+    c = [sent[idx - 1] for idx, i in enumerate(pred) if i]
     concepts.append(c)
   return concepts, logits
 

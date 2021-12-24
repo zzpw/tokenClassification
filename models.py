@@ -41,7 +41,7 @@ class BertTokenClassifier(BertPreTrainedModel):
       self.loss_fct = nn.CrossEntropyLoss(label_smoothing=config.label_smoothing)
     else:
       self.loss_fct = nn.CrossEntropyLoss()
-    self.loss_fct = FocalLoss(self.loss_fct)
+    # self.loss_fct = FocalLoss(self.loss_fct)
     self.init_weights()
 
   def forward(
