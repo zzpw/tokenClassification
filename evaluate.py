@@ -51,12 +51,15 @@ def extract_concepts_from_sentences(sentences, model, tokenizer, max_length=None
 
   """
   model.eval()
-  valid_tag = convert_sentences_with_valid_tag(sentences, tokenizer, max_length)
-  valid_tag = torch.tensor(valid_tag)
-  if max_length is None:
-    outputs = model(**tokenizer(sentences, padding=True, return_tensors='pt', ).to(model.device), valid_ids=valid_tag)
-  else:
-    outputs = model(**tokenizer(sentences, padding='max_length', truncation=True, return_tensors='pt', max_length=max_length).to(model.device), valid_ids=valid_tag)
+  input_ids, attention_mask, valid_tag = convert_sentences_with_valid_tag(sentences, tokenizer, max_length)
+  input_ids = torch.tensor(input_ids).to(model.device)
+  attention_mask = torch.tensor(attention_mask).to(model.device)
+  valid_tag = torch.tensor(valid_tag).to(model.device)
+  # if max_length is None:
+  #   outputs = model(**tokenizer(sentences, padding=True, return_tensors='pt', ).to(model.device), valid_ids=valid_tag)
+  # else:
+  #   outputs = model(**tokenizer(sentences, padding='max_length', truncation=True, return_tensors='pt', max_length=max_length).to(model.device), valid_ids=valid_tag)
+  outputs = model(input_ids=input_ids, attention_mask=attention_mask, valid_ids=valid_tag)
   logits = outputs.logits  # [batch_size, src_length, num_labels]
   preds = torch.argmax(logits, dim=-1)  # [batch_size, src_length]
   tokenized_sents = [nltk.word_tokenize(x) for x in sentences] # [batch_size, scr_length]
@@ -86,7 +89,7 @@ def cal_all_metrics_on_dataset(model, tokenizer, dataset, batch_size=64, max_len
   model.eval()
   sentences = dataset.data['sentences']
   batch_num = len(sentences) // batch_size
-  preds = torch.Tensor()
+  preds = torch.Tensor().to(model.device)
   for i in range(batch_num):
     _, cur = extract_concepts_from_sentences(sentences[i * batch_size: (i + 1) * batch_size], model, tokenizer,
                                                    max_length=max_length)
@@ -94,7 +97,7 @@ def cal_all_metrics_on_dataset(model, tokenizer, dataset, batch_size=64, max_len
     torch.cuda.empty_cache()
   _, cur = extract_concepts_from_sentences(sentences[batch_num * batch_size:], model, tokenizer, max_length=max_length)
   preds = torch.concat((preds, cur))
-  metrics = calculate_all_metrics(preds, dataset.labels, threshold)
+  metrics = calculate_all_metrics(preds.detach().cpu(), dataset.labels, threshold)
   return metrics
 
 from transformers import BertTokenizer, BertConfig
@@ -105,11 +108,11 @@ if __name__ == '__main__':
   import json
   config = BertConfig.from_pretrained('bert-large-uncased')
   model = BertTokenClassifier.from_pretrained('bert-large-uncased', config=config)
-  model.load_state_dict(torch.load('./checkpoints/20211215/model.pt'))
+  model.load_state_dict(torch.load('./checkpoints/2021-12-25/model.pt'))
   model.to(torch.device(1))
   tokenizer = BertTokenizer.from_pretrained('bert-large-uncased')
   valid_dataset = ExtDataModule('./ext_valid.json', tokenizer=tokenizer, max_length=24)
-  concepts = cal_all_metrics_on_dataset(model, tokenizer, valid_dataset)
+  metrics = cal_all_metrics_on_dataset(model, tokenizer, valid_dataset)
 
 
   # real_concepts = []

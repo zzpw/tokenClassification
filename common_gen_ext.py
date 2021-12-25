@@ -15,7 +15,7 @@ from preprocess import sent_lemmatize_and_tokenize
 config = BertConfig.from_pretrained('bert-large-uncased')
 tokenizer = BertTokenizer.from_pretrained('bert-large-uncased')
 model = BertTokenClassifier.from_pretrained('bert-large-uncased')
-model.load_state_dict(torch.load('./checkpoints/2021-12-16/model.pt'))
+model.load_state_dict(torch.load('./checkpoints/2021-12-25/model.pt'))
 model.to(torch.device(0))
 model.eval()
 
@@ -30,8 +30,8 @@ sentences = train_data['sentences']
 batch_num = len(sentences) // batch_size
 
 concepts = []
-t= ['A finger obstructs a currency bill that is from the US.']
-extract_concepts_from_sentences(t, model, tokenizer, 24)[0]
+# t= ['A finger obstructs a currency bill that isn\'t from the US.']
+# print(extract_concepts_from_sentences(t, model, tokenizer, 24)[0])
 for i in range(batch_num):
   concept, _ = extract_concepts_from_sentences(sentences[i * batch_size: (i + 1) * batch_size], model, tokenizer,
                                            max_length=max_length)
@@ -49,7 +49,7 @@ for concept in concepts:
 
 additional_train_data = {'concepts': concepts_lemma, 'target': sentences}
 
-# with open('./additional_train_data.json', 'w') as f:
+# with open('./corpus_train_data.json', 'w') as f:
 #   f.write(json.dumps(additional_train_data))
 
 # %%

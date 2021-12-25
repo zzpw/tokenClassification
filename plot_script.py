@@ -14,9 +14,9 @@ from models import BertTokenClassifier
 
 config = BertConfig.from_pretrained('bert-large-uncased')
 model = BertTokenClassifier.from_pretrained('bert-large-uncased', config=config)
-model_path = './checkpoints/2021-12-16/model.pt'
+model_path = './checkpoints/2021-12-24/model.pt'
 model.load_state_dict(torch.load(model_path, map_location='cpu'))
-model.to(torch.device(1))
+model.to(torch.device(0))
 tokenizer = BertTokenizer.from_pretrained('bert-large-uncased')
 valid_dataset = ExtDataModule(json_data_path='./ext_train.json', tokenizer=tokenizer, max_length=24)
 
@@ -26,7 +26,7 @@ max_length = 24
 model.eval()
 sentences = valid_dataset.data['sentences']
 batch_num = len(sentences) // batch_size
-preds = torch.Tensor()
+preds = torch.Tensor().to(model.device)
 for i in range(batch_num):
   _, cur = extract_concepts_from_sentences(sentences[i * batch_size: (i + 1) * batch_size], model, tokenizer,
                                            max_length=max_length)
@@ -43,7 +43,7 @@ for k in SCORER.keys():
 
 while threshold >= 0.:
   # print('{:.2f}'.format(threshold))
-  metrics = calculate_all_metrics(preds, valid_dataset.labels, threshold)
+  metrics = calculate_all_metrics(preds.detach().cpu(), valid_dataset.labels, threshold)
   for k in pr_curve.keys():
     pr_curve[k].append(metrics[k])
   threshold -= 0.01

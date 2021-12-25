@@ -17,7 +17,7 @@ from transformers import get_linear_schedule_with_warmup
 from models import BertTokenClassifier
 
 from dataset import ExtDataModule
-from evaluate import model_validation_loss
+from evaluate import model_validation_loss, cal_all_metrics_on_dataset
 from train import (
   model_forward_batch,
   set_weight_decay,
@@ -88,6 +88,8 @@ for epoch in range(args.epochs):
   torch.cuda.empty_cache()
   valid_loss = model_validation_loss(valid_dataloader=valid_dataloader, model=model)
   print('validation loss:', valid_loss)
+  metrics = cal_all_metrics_on_dataset(model, tokenizer, valid_dataset)
+  print(metrics)
   if valid_loss < prev_valid_loss:
     prev_valid_loss = valid_loss
     torch.save(model.state_dict(), args.model_save_path)
